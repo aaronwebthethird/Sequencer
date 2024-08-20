@@ -36,12 +36,23 @@ I'm using the script deployment using solidity so the contract address is fixed 
 
 Again with some of the private key management it's less than ideal and this would be managed much differently in a real world example so please keep and open mind.
 
+## Project Structure
+
+Sequencer.ts - entry point for sequencer, listens for new blocks and querys DRAND
+
+TransactionManager.ts - Processes values from the sequencer 
+
+TransactionQueue.ts - queue for managing all transactions 
+
+DrandOracle.sol - solidity contract for drandoracle storage
 
 ## Notes
 
-There is a lot more i would do. Namely
+There is a lot more i would do. 
 
-Write more tests
+Namely...
+
+Write a lot more tests
 
 Resetting the nonce if it gets completely out of sync with the server
 
