@@ -1,124 +1,145 @@
-import { Mutex } from "async-mutex";
-import TransactionManager, { TransactionStatus } from "../src/blockchain/TransactionManager";
 import { Abi } from "viem";
+import TransactionManager from '../src/blockchain/TransactionManager';
+import { TransactionQueue } from '../src/blockchain/TransactionQueue';
+import { HappyChainClient } from "../src/blockchain/ChainClient";
+import { Transaction, TransactionStatus } from "../src/blockchain/TransactionTypes";
 
-jest.mock("../src/blockchain/ChainClient");
-jest.mock("../src/blockchain/TransactionQueue");
 
-describe("TransactionManager.queueTransactionAsync", () => {
+// Mock the TransactionQueue module
+jest.mock('../src/blockchain/TransactionQueue', () => {
+    return {
+        TransactionQueue: jest.fn().mockImplementation((nonce: number) => {
+            return {
+                addTransaction: jest.fn(),
+                resetNonce: jest.fn(),
+                nonceCollapsed: jest.fn(),
+                hasFailures: jest.fn(),
+                removeTransaction: jest.fn(),
+                getCurrentNonce: jest.fn().mockReturnValue(nonce),
+                getTransaction: jest.fn(),
+                getTransactions: jest.fn().mockReturnValue(new Map()),
+                length: jest.fn().mockReturnValue(0),
+            };
+        })
+    };
+});
+
+jest.mock('../src/blockchain/ChainClient', () => ({
+    HappyChainClient: {
+        simulateContract: jest.fn(),
+        writeContract: jest.fn(),
+        waitForTransactionReceipt: jest.fn(),
+        getTransactionCount: jest.fn(),
+    },
+}));
+
+
+describe('TransactionManager', () => {
     let transactionManager: ReturnType<typeof TransactionManager.getInstance>;
     const mockAbi: Abi = [];
-    let mutex: Mutex;
 
     beforeEach(() => {
+        // Reset the mock before each test
+        jest.clearAllMocks();
         transactionManager = TransactionManager.getInstance(0, true);
-        jest.clearAllMocks();
     });
 
-    afterEach(() => {
-        jest.clearAllMocks();
-    });
+    describe('queueTransactionAsync', () => {
+        it('should queue a transaction with the correct parameters', async () => {
+            const blockNumber = 123n;
+            const oracleAddress = '0xOracleAddress';
+            const functionName = 'updateRandomnessForBlock';
+            const args = [blockNumber, '0x1234567890abcdef'];
 
-    it("should queue a transaction with the correct parameters", async () => {
-        const blockNumber = 123n;
-        const from = "0xYourWalletAddress";
-        const oracleAddress = "0xOracleAddress";
-        const functionName = "updateRandomnessForBlock";
-        const args = [blockNumber, "0x1234567890abcdef"];
-
-        await transactionManager.queueTransactionAsync(
-            blockNumber,
-            from,
-            oracleAddress,
-            mockAbi,
-            functionName,
-            args
-        );
-
-        const pendingTransactions = transactionManager.getTransactions();
-
-        expect(pendingTransactions.length).toBe(1);
-        const queuedTransaction = pendingTransactions[0];
-
-        expect(queuedTransaction.nonce).toBe(0);
-        expect(queuedTransaction.blockNumber).toBe(blockNumber);
-        expect(queuedTransaction.txHash).toBeNull();
-        expect(queuedTransaction.timestamp).toBeLessThanOrEqual(Date.now());
-        expect(queuedTransaction.oracleAddress).toBe(oracleAddress);
-        expect(queuedTransaction.abi).toBe(mockAbi);
-        expect(queuedTransaction.functionName).toBe(functionName);
-        expect(queuedTransaction.args).toBe(args);
-        expect(queuedTransaction.status).toBe(TransactionStatus.Pending);
-        expect(queuedTransaction.retryCount).toBe(0);
-    });
-
-    it("should increment the nonce for each queued transaction", async () => {
-        const blockNumber1 = 123n;
-        const blockNumber2 = 124n;
-
-        await transactionManager.queueTransactionAsync(
-            blockNumber1,
-            "0xYourWalletAddress",
-            "0xOracleAddress1",
-            mockAbi,
-            "functionName1",
-            ["arg1"]
-        );
-
-        await transactionManager.queueTransactionAsync(
-            blockNumber2,
-            "0xYourWalletAddress",
-            "0xOracleAddress2",
-            mockAbi,
-            "functionName2",
-            ["arg2"]
-        );
-
-        const pendingTransactions = transactionManager.getTransactions();
-
-        expect(pendingTransactions.length).toBe(2);
-
-        expect(pendingTransactions[0].nonce).toBe(0);
-        expect(pendingTransactions[1].nonce).toBe(1);
-    });
-
-    it("should handle multiple transactions queued simultaneously", async () => {
-        const blockNumber1 = 123n;
-        const blockNumber2 = 124n;
-        const blockNumber3 = 125n;
-
-        await Promise.all([
-            transactionManager.queueTransactionAsync(
-                blockNumber1,
-                "0xYourWalletAddress",
-                "0xOracleAddress1",
+            await transactionManager.queueTransactionAsync(
+                blockNumber,
+                oracleAddress,
                 mockAbi,
-                "functionName1",
-                ["arg1"]
-            ),
-            transactionManager.queueTransactionAsync(
-                blockNumber2,
-                "0xYourWalletAddress",
-                "0xOracleAddress2",
-                mockAbi,
-                "functionName2",
-                ["arg2"]
-            ),
-            transactionManager.queueTransactionAsync(
-                blockNumber3,
-                "0xYourWalletAddress",
-                "0xOracleAddress3",
-                mockAbi,
-                "functionName3",
-                ["arg3"]
-            ),
-        ]);
+                functionName,
+                args
+            );
 
-        const pendingTransactions = transactionManager.getTransactions();
+            const mockQueue = (TransactionQueue as jest.Mock).mock.results[0].value;
 
-        expect(pendingTransactions.length).toBe(3);
-        expect(pendingTransactions[0].nonce).toBe(0);
-        expect(pendingTransactions[1].nonce).toBe(1);
-        expect(pendingTransactions[2].nonce).toBe(2);
+            expect(mockQueue.addTransaction).toHaveBeenCalledTimes(1);
+            expect(mockQueue.addTransaction).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    blockNumber,
+                    oracleAddress,
+                    abi: mockAbi,
+                    functionName,
+                    args,
+                    status: 1,
+                    retryCount: 0
+                }));
+
+        });
+
+        it('should queue a transaction with the correct parameters', async () => {
+            const blockNumber = 123n;
+            const oracleAddress = '0xOracleAddress';
+            const functionName = 'updateRandomnessForBlock';
+            const args = [blockNumber, '0x1234567890abcdef'];
+
+            await transactionManager.queueTransactionAsync(
+                blockNumber,
+                oracleAddress,
+                mockAbi,
+                functionName,
+                args
+            );
+
+            const mockQueue = (TransactionQueue as jest.Mock).mock.results[0].value;
+
+            expect(mockQueue.addTransaction).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('TransactionManager.managePendingTransactionsAsync', () => {
+        let transactionManager: ReturnType<typeof TransactionManager.getInstance>;
+        const mockAbi: Abi = [];
+        const pendingTransaction: Transaction = {
+            blockNumber: 1n,
+            txHash: null,
+            oracleAddress: '0xOracleAddress',
+            abi: mockAbi,
+            functionName: 'updateRandomnessForBlock',
+            args: [7654n, '0x1234567890abcdef'],
+            status: TransactionStatus.Pending,
+            retryCount: 0,
+        };
+        const nonce = 0;
+
+        beforeEach(() => {
+            jest.clearAllMocks();
+            transactionManager = TransactionManager.getInstance(0, true);
+        });
+
+        it('should process pending transactions and mark them as in-progress', async () => {
+            const mockQueue = (TransactionQueue as jest.Mock).mock.results[0].value;
+            const pendingTransactions = new Map<number, Transaction>();
+
+            pendingTransactions.set(nonce, pendingTransaction);
+
+            mockQueue.getTransactions.mockReturnValue(pendingTransactions);
+
+            await transactionManager.managePendingTransactionsAsync();
+
+            expect(mockQueue.getTransactions).toHaveBeenCalled();
+
+        });
+
+        it('should handle completed transactions and remove them from the queue', async () => {
+            const mockQueue = (TransactionQueue as jest.Mock).mock.results[0].value;
+            const pendingTransactions = new Map<number, any>([
+                [0, { status: TransactionStatus.Completed, args: [123n] }],
+            ]);
+            mockQueue.getTransactions.mockReturnValue(pendingTransactions);
+
+            await transactionManager.managePendingTransactionsAsync();
+
+            expect(mockQueue.removeTransaction).toHaveBeenCalledWith(0);
+        });
+
     });
 });

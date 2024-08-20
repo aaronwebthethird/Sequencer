@@ -6,6 +6,7 @@ import TransactionManager from "./blockchain/TransactionManager";
 const Sequencer = async () => {
     const nonce = await HappyChainClient.getTransactionCount({ address: `0x${WALLET_PUBLIC_KEY}` })
     const transactionManager = TransactionManager.getInstance(nonce);
+    console.log(`Starting sequencer with nonce ${nonce}\n\n`);
     const options = {
         disableBeaconVerification: false,
         noCache: false,
@@ -26,10 +27,9 @@ const Sequencer = async () => {
             onBlock: async block => {
                 const timestampMS = Number(block.timestamp) * 1000;
                 const beacon = await fetchBeaconByTime(client, new Date(timestampMS).getTime());
-                console.log(`Block number - ${block.number} Timestamp - ${block.timestamp} beacon round - ${beacon.round} randomness - ${beacon.randomness}`);
+                console.log(`${block.timestamp} - Block number - ${block.number} beacon round - ${beacon.round} randomness - ${beacon.randomness}`);
                 await transactionManager.queueTransactionAsync(
                     block.number,
-                    `0x${WALLET_PUBLIC_KEY}`,
                     contractAddress,
                     DRAND_ORACLE_ABI,
                     'updateRandomnessForBlock',
@@ -43,3 +43,4 @@ const Sequencer = async () => {
 Sequencer();
 
 //forge create --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80  src/blockchain/solidity/DrandOracle.sol:DrandOracle --constructor-args=10
+

@@ -32,7 +32,7 @@ ANVIL_PID=$!
 echo "Anvil started with PID $ANVIL_PID"
 
 # 4. Deploy the Smart Contract - More security required here
-forge script Deploy --fork-url http://127.0.0.1:8545  --private-key 0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a --broadcast
+forge script Deploy --fork-url http://127.0.0.1:8545  --private-key <PRIVATE KEY HERE> --broadcast
 
 # 6. Monitor and manage processes
 echo "Monitoring the processes. Press [CTRL+C] to stop."
@@ -41,3 +41,7 @@ trap "kill $SEQUENCER_PID $ANVIL_PID; exit 0" SIGINT SIGTERM
 # 7. Keep the script running to maintain the processes
 wait $SEQUENCER_PID
 wait $ANVIL_PID
+
+
+
+# cast call --rpc-url http://127.0.0.1:8545 0x663F3ad617193148711d28f5334eE4Ed07016602 "unsafeGetRandomnessForBlock(uint256)(bytes32)" 1724146235

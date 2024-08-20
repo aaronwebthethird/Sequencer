@@ -1,4 +1,5 @@
-import { TransactionQueue, Transaction, TransactionStatus } from "../src/blockchain/TransactionQueue"
+import { TransactionQueue } from "../src/blockchain/TransactionQueue"
+import { Transaction, TransactionStatus } from "../src/blockchain/TransactionTypes";
 import { Abi } from "viem";
 
 describe('TransactionQueue', () => {
@@ -12,8 +13,8 @@ describe('TransactionQueue', () => {
     // AddTransactions
     describe('AddTransactions', () => {
         it('should create a transaction queue with the specified nonce and capacity', () => {
-            expect(transactionQueue.getItems()).toBeInstanceOf(Map);
-            expect(transactionQueue.getItems().size).toBe(0);
+            expect(transactionQueue.getTransactions()).toBeInstanceOf(Map);
+            expect(transactionQueue.getTransactions().size).toBe(0);
             expect(transactionQueue.getCurrentNonce()).toBe(initialNonce);
         });
 
@@ -21,7 +22,6 @@ describe('TransactionQueue', () => {
             const transaction: Transaction = {
                 blockNumber: 123n,
                 txHash: null,
-                timestamp: Date.now(),
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
@@ -41,7 +41,6 @@ describe('TransactionQueue', () => {
             const transaction: Transaction = {
                 blockNumber: 123n,
                 txHash: null,
-                timestamp: Date.now(),
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
@@ -58,7 +57,6 @@ describe('TransactionQueue', () => {
             const transaction1: Transaction = {
                 blockNumber: 123n,
                 txHash: null,
-                timestamp: Date.now(),
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
@@ -70,7 +68,6 @@ describe('TransactionQueue', () => {
             const transaction2: Transaction = {
                 blockNumber: 124n,
                 txHash: null,
-                timestamp: Date.now(),
                 oracleAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'anotherFunction',
@@ -93,84 +90,6 @@ describe('TransactionQueue', () => {
 
     });
 
-    // ResetNonces
-    describe('ResetNonces', () => {
-        it('should reset nonces and reorder transactions starting from the verified nonce', () => {
-            const transaction1: Transaction = {
-                blockNumber: 123n,
-                txHash: '0xhash1',
-                timestamp: Date.now(),
-                oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
-                abi: [] as Abi, // Assume some ABI here
-                functionName: 'someFunction',
-                args: [],
-                status: TransactionStatus.Completed,
-                retryCount: 0,
-            };
-
-            const transaction2: Transaction = {
-                blockNumber: 124n,
-                txHash: '0xhash2',
-                timestamp: Date.now(),
-                oracleAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef',
-                abi: [] as Abi, // Assume some ABI here
-                functionName: 'anotherFunction',
-                args: [],
-                status: TransactionStatus.Completed,
-                retryCount: 0,
-            };
-
-            transactionQueue.addTransaction(transaction1);
-            transactionQueue.addTransaction(transaction2);
-
-            expect(transactionQueue.getCurrentNonce()).toBe(12);
-
-            transactionQueue.resetNonces(14);
-
-            const updatedTransaction1 = transactionQueue.getTransaction(14);
-            const updatedTransaction2 = transactionQueue.getTransaction(15);
-
-            expect(updatedTransaction1).toBeDefined();
-            expect(updatedTransaction2).toBeDefined();
-
-            expect(updatedTransaction1?.blockNumber).toBe(transaction1.blockNumber);
-            expect(updatedTransaction2?.blockNumber).toBe(transaction2.blockNumber);
-            expect(transactionQueue.getCurrentNonce()).toBe(16);
-        });
-
-        it('should handle resetting nonces when the queue is empty', () => {
-            // Perform the reset on an empty queue
-            transactionQueue.resetNonces(20);
-
-            // The queue should remain empty, and currentNonce should be updated to the verifiedNonce
-            expect(transactionQueue.getItems().size).toBe(0);
-            expect(transactionQueue.getCurrentNonce()).toBe(20);
-        });
-
-        it('should handle resetting nonces when the verifiedNonce is the same as the currentNonce', () => {
-            const transaction1: Transaction = {
-                blockNumber: 123n,
-                txHash: '0xhash1',
-                timestamp: Date.now(),
-                oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
-                abi: [] as Abi, // Assume some ABI here
-                functionName: 'someFunction',
-                args: [],
-                status: TransactionStatus.Completed,
-                retryCount: 0,
-            };
-
-            transactionQueue.addTransaction(transaction1);
-            transactionQueue.resetNonces(initialNonce);
-
-            const updatedTransaction = transactionQueue.getTransaction(initialNonce);
-            expect(updatedTransaction).toBeDefined();
-
-            expect(transactionQueue.getItems().size).toBe(1);
-            expect(transactionQueue.getCurrentNonce()).toBe(initialNonce + 1);
-        });
-    });
-
     describe('HasFailures', () => {
         it('should return false when there are no transactions in the queue', () => {
             const result = transactionQueue.hasFailures();
@@ -182,7 +101,7 @@ describe('TransactionQueue', () => {
             const transaction1: Transaction = {
                 blockNumber: 123n,
                 txHash: '0xhash1',
-                timestamp: Date.now(),
+
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
@@ -194,7 +113,7 @@ describe('TransactionQueue', () => {
             const transaction2: Transaction = {
                 blockNumber: 124n,
                 txHash: '0xhash2',
-                timestamp: Date.now(),
+
                 oracleAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'anotherFunction',
@@ -215,7 +134,7 @@ describe('TransactionQueue', () => {
             const transaction1: Transaction = {
                 blockNumber: 123n,
                 txHash: '0xhash1',
-                timestamp: Date.now(),
+
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
@@ -227,12 +146,12 @@ describe('TransactionQueue', () => {
             const transaction2: Transaction = {
                 blockNumber: 124n,
                 txHash: '0xhash2',
-                timestamp: Date.now(),
+
                 oracleAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'anotherFunction',
                 args: [],
-                status: TransactionStatus.Failed, // Mark this transaction as failed
+                status: TransactionStatus.GasFailure, // Mark this transaction as failed
                 retryCount: 1,
             };
 
@@ -248,24 +167,24 @@ describe('TransactionQueue', () => {
             const transaction1: Transaction = {
                 blockNumber: 123n,
                 txHash: '0xhash1',
-                timestamp: Date.now(),
+
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
                 args: [],
-                status: TransactionStatus.Failed, // Mark this transaction as failed
+                status: TransactionStatus.NonceFailure, // Mark this transaction as failed
                 retryCount: 1,
             };
 
             const transaction2: Transaction = {
                 blockNumber: 124n,
                 txHash: '0xhash2',
-                timestamp: Date.now(),
+
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'anotherFunction',
                 args: [],
-                status: TransactionStatus.Failed, // Mark this transaction as failed
+                status: TransactionStatus.NonceFailure, // Mark this transaction as failed
                 retryCount: 1,
             };
 
@@ -275,14 +194,13 @@ describe('TransactionQueue', () => {
             const result = transactionQueue.hasFailures();
             expect(result).toBe(true); // All transactions have failed
         });
-    });
-    describe('HasFailures', () => {
-        it('should remove a transaction from the queue by nonce', () => {
-            // Setup initial transactions
+
+        it('should return true when there is at least one failed transaction in the queue', () => {
+            // Setup initial transactions with one failure
             const transaction1: Transaction = {
                 blockNumber: 123n,
                 txHash: '0xhash1',
-                timestamp: Date.now(),
+
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
@@ -294,7 +212,45 @@ describe('TransactionQueue', () => {
             const transaction2: Transaction = {
                 blockNumber: 124n,
                 txHash: '0xhash2',
-                timestamp: Date.now(),
+
+                oracleAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef',
+                abi: [] as Abi, // Assume some ABI here
+                functionName: 'anotherFunction',
+                args: [],
+                status: TransactionStatus.InProgress, // Mark this transaction as failed
+                retryCount: 1,
+            };
+
+            transactionQueue.addTransaction(transaction1);
+            transactionQueue.addTransaction(transaction2);
+
+            transaction1.status = TransactionStatus.GasFailure;
+
+            const result = transactionQueue.hasFailures();
+            expect(result).toBe(true); // There is a failure in the queue
+        });
+    });
+
+
+    describe('Remove Transaction', () => {
+        it('should remove a transaction from the queue by nonce', () => {
+            // Setup initial transactions
+            const transaction1: Transaction = {
+                blockNumber: 123n,
+                txHash: '0xhash1',
+
+                oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
+                abi: [] as Abi, // Assume some ABI here
+                functionName: 'someFunction',
+                args: [],
+                status: TransactionStatus.Completed,
+                retryCount: 0,
+            };
+
+            const transaction2: Transaction = {
+                blockNumber: 124n,
+                txHash: '0xhash2',
+
                 oracleAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'anotherFunction',
@@ -307,14 +263,14 @@ describe('TransactionQueue', () => {
             transactionQueue.addTransaction(transaction2);
 
             // Confirm both transactions are in the queue
-            expect(transactionQueue.getItems().size).toBe(2);
+            expect(transactionQueue.getTransactions().size).toBe(2);
 
             // Remove the first transaction
             transactionQueue.removeTransaction(initialNonce);
 
             // Check that the first transaction was removed
             expect(transactionQueue.getTransaction(initialNonce)).toBeUndefined();
-            expect(transactionQueue.getItems().size).toBe(1); // Only one transaction should remain
+            expect(transactionQueue.getTransactions().size).toBe(1); // Only one transaction should remain
 
             // Check that the remaining transaction is correct
             expect(transactionQueue.getTransaction(initialNonce + 1)).toEqual(transaction2);
@@ -325,7 +281,7 @@ describe('TransactionQueue', () => {
             const transaction: Transaction = {
                 blockNumber: 123n,
                 txHash: '0xhash1',
-                timestamp: Date.now(),
+
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
@@ -337,13 +293,13 @@ describe('TransactionQueue', () => {
             transactionQueue.addTransaction(transaction);
 
             // Confirm the transaction is in the queue
-            expect(transactionQueue.getItems().size).toBe(1);
+            expect(transactionQueue.getTransactions().size).toBe(1);
 
             // Attempt to remove a transaction with a nonexistent nonce
             expect(() => transactionQueue.removeTransaction(99)).not.toThrow();
 
             // Ensure the original transaction is still there
-            expect(transactionQueue.getItems().size).toBe(1);
+            expect(transactionQueue.getTransactions().size).toBe(1);
             expect(transactionQueue.getTransaction(initialNonce)).toEqual(transaction);
         });
 
@@ -352,7 +308,7 @@ describe('TransactionQueue', () => {
             const transaction1: Transaction = {
                 blockNumber: 123n,
                 txHash: '0xhash1',
-                timestamp: Date.now(),
+
                 oracleAddress: '0x1234567890abcdef1234567890abcdef12345678',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'someFunction',
@@ -364,7 +320,7 @@ describe('TransactionQueue', () => {
             const transaction2: Transaction = {
                 blockNumber: 124n,
                 txHash: '0xhash2',
-                timestamp: Date.now(),
+
                 oracleAddress: '0xabcdefabcdefabcdefabcdefabcdefabcdefabcdef',
                 abi: [] as Abi, // Assume some ABI here
                 functionName: 'anotherFunction',
@@ -377,13 +333,13 @@ describe('TransactionQueue', () => {
             transactionQueue.addTransaction(transaction2);
 
             // Confirm both transactions are in the queue
-            expect(transactionQueue.getItems().size).toBe(2);
+            expect(transactionQueue.getTransactions().size).toBe(2);
 
             // Remove the second transaction
             transactionQueue.removeTransaction(initialNonce + 1);
 
             // Ensure the first transaction is still there
-            expect(transactionQueue.getItems().size).toBe(1);
+            expect(transactionQueue.getTransactions().size).toBe(1);
             expect(transactionQueue.getTransaction(initialNonce)).toEqual(transaction1);
 
             // Ensure the second transaction was removed

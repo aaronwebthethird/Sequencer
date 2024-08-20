@@ -1,61 +1,50 @@
-import { Transaction, TransactionStatus } from './TransactionTypes';
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TransactionQueue = void 0;
+const Enums_1 = require("./Enums");
 // Capactiy added but not implemented, possible to throttle the number of transactions in the queue to maximum capacity of mem pool
 // would require further handling to manage anything that's outside of the capacity
-const TransactionQueue = ((nonce: number, capacity?: number) => {
-    let queue = new Map<number, Transaction>();
+const TransactionQueue = ((nonce, capacity) => {
+    let queue = new Map();
     let currentNonce = nonce;
-
-    const addTransaction = (transaction: Transaction): number => {
+    const addTransaction = (transaction) => {
         var setNonce = currentNonce;
         queue.set(setNonce, transaction);
         currentNonce++;
         return setNonce;
     };
-
-    const getTransaction = (nonce: number): Transaction | undefined => {
+    const getTransaction = (nonce) => {
         return queue.get(nonce);
     };
-
-    const resetNonce = (verifiedNonce: number): void => {
+    const resetNonce = (verifiedNonce) => {
         const allNonceFailures = Array.from(queue.values())
-            .every(transaction => transaction.status === TransactionStatus.NonceFailure);
-
+            .every(transaction => transaction.status === Enums_1.TransactionStatus.NonceFailure);
         if (allNonceFailures) {
-            const newQueue = new Map<number, Transaction>();
-
+            const newQueue = new Map();
             for (const transaction of queue.values()) {
                 newQueue.set(verifiedNonce, transaction);
                 verifiedNonce++;
             }
-
             queue = newQueue;
             currentNonce = verifiedNonce;
         }
     };
-
-    const hasFailures = (): boolean => {
+    const hasFailures = () => {
         return Array.from(queue.values())
-            .some(
-                transaction => transaction.status === TransactionStatus.GasFailure ||
-                    transaction.status === TransactionStatus.NonceFailure ||
-                    transaction.status === TransactionStatus.ExecutionFailure);
-    }
-
-    const nonceCollapsed = (): boolean => {
-        return Array.from(queue.values())
-            .every(transaction => transaction.status === TransactionStatus.NonceFailure);
-    }
-
-    const getTransactions = (): Map<number, Transaction> => {
-        return new Map(Array.from(queue.entries()).sort((a, b) => a[0] - b[0]));
-
+            .some(transaction => transaction.status === Enums_1.TransactionStatus.GasFailure ||
+            transaction.status === Enums_1.TransactionStatus.NonceFailure ||
+            transaction.status === Enums_1.TransactionStatus.ExecutionFailure);
     };
-
-    const removeTransaction = (nonce: number): void => {
+    const nonceCollapsed = () => {
+        return Array.from(queue.values())
+            .every(transaction => transaction.status === Enums_1.TransactionStatus.NonceFailure);
+    };
+    const getTransactions = () => {
+        return new Map(Array.from(queue.entries()).sort((a, b) => a[0] - b[0]));
+    };
+    const removeTransaction = (nonce) => {
         queue.delete(nonce);
     };
-
     return {
         addTransaction,
         resetNonce,
@@ -66,8 +55,6 @@ const TransactionQueue = ((nonce: number, capacity?: number) => {
         getTransaction,
         getTransactions: getTransactions,
         length: () => queue.size,
-
     };
 });
-
-export { TransactionQueue };
+exports.TransactionQueue = TransactionQueue;

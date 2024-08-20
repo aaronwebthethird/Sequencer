@@ -9,6 +9,6 @@ const HappyChainClient = (0, viem_1.createTestClient)({
     chain: chains_1.foundry,
     mode: "anvil",
     transport: (0, viem_1.http)(),
-    account: (0, accounts_1.privateKeyToAccount)(`0x${Constants_1.WALLET_PRIVATE_KEY}`),
+    account: (0, accounts_1.privateKeyToAccount)(`0x${Constants_1.WALLET_PRIVATE_KEY}`, { nonceManager: accounts_1.nonceManager }),
 }).extend(viem_1.walletActions).extend(viem_1.publicActions);
 exports.HappyChainClient = HappyChainClient;

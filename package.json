@@ -4,6 +4,7 @@
   "description": "",
   "main": "src/Sequencer.ts",
   "scripts": {
+    "clear": "jest --clearCache",
     "test": "jest",
     "build": "tsc",
     "start": "node dist/Sequencer.js",
